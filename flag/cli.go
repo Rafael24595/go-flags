@@ -136,20 +136,24 @@ func (c *CLI) parse(args []string) error {
 	return nil
 }
 
-func (c *CLI) ShowHelp() error {
-	return c.showHelp(os.Stdout, DefaultFormatter)
+// WriteOptions writes the registered options to stdout using the default formatter.
+func (c *CLI) WriteOptions() error {
+	return c.WriteOptionsWith(os.Stdout, DefaultFormatter)
 }
 
-func (c *CLI) showHelp(
+// WriteOptionsWith writes the registered options to the given writer using the
+// given formatter.
+func (c *CLI) WriteOptionsWith(
 	writer io.Writer,
 	formater Formatter,
 ) error {
-	help := c.makeHelp(formater)
+	help := c.FormatOptions(formater)
 	_, err := writer.Write([]byte(help))
 	return err
 }
 
-func (c *CLI) makeHelp(formatter Formatter) string {
+// FormatOptions formats the registered options using the given formatter.
+func (c *CLI) FormatOptions(formatter Formatter) string {
 	infos := make([]Info, 0, len(c.flags))
 	for _, f := range c.flags {
 		infos = append(infos, f.info())
