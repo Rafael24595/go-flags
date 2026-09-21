@@ -18,15 +18,15 @@ type DefaultInfo struct {
 	// Value is the default value.
 	Value any
 	// Set indicates whether a default value is defined.
-	Set   bool
+	Set bool
 }
 
 // Info contains the metadata used to format a command-line option.
 type Info struct {
 	// Names is a list of names and aliases for the option.
-	Names       []string
+	Names []string
 	// Type is the name of the value type for the option.
-	Type        string
+	Type TypeName
 	// Description is a human-readable description of the option.
 	Description string
 
@@ -46,7 +46,7 @@ type Info struct {
 type Flag[T any] struct {
 	parser Parser[T]
 
-	typeName    string
+	typeName    TypeName
 	names       []string
 	description string
 
@@ -72,8 +72,9 @@ type Flag[T any] struct {
 //
 // cover := New(IntParser, "Cover index", "-c", "--cover")
 func New[T any](
+	typeName TypeName,
 	parser Parser[T],
-	typeName, desc string,
+	desc string,
 	names ...string,
 ) *Flag[T] {
 	if len(names) == 0 {

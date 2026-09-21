@@ -10,12 +10,12 @@ func TestDefaultFormatter(t *testing.T) {
 	flags := []Info{
 		{
 			Names:       []string{"-b", "--bool"},
-			Type:        "bool",
+			Type:        TypeBool,
 			Description: "Enable verbose output",
 		},
 		{
 			Names:       []string{"-s", "--string"},
-			Type:        "string",
+			Type:        TypeString,
 			Description: "Input file",
 			Required:    true,
 			UndefinedDefault: DefaultInfo{
@@ -25,7 +25,7 @@ func TestDefaultFormatter(t *testing.T) {
 		},
 		{
 			Names:       []string{"-i", "--int"},
-			Type:        "int",
+			Type:        TypeInt,
 			Description: "Number of items",
 			UndefinedDefault: DefaultInfo{
 				Value: 10,
@@ -34,7 +34,7 @@ func TestDefaultFormatter(t *testing.T) {
 		},
 		{
 			Names:       []string{"--int64"},
-			Type:        "int64",
+			Type:        TypeInt64,
 			Description: "64-bit integer",
 			UndefinedDefault: DefaultInfo{
 				Value: int64(100),
@@ -43,7 +43,7 @@ func TestDefaultFormatter(t *testing.T) {
 		},
 		{
 			Names:       []string{"--uint"},
-			Type:        "uint",
+			Type:        TypeUint,
 			Description: "Unsigned integer",
 			UndefinedDefault: DefaultInfo{
 				Value: uint(20),
@@ -52,7 +52,7 @@ func TestDefaultFormatter(t *testing.T) {
 		},
 		{
 			Names:       []string{"--uint64"},
-			Type:        "uint64",
+			Type:        TypeUint64,
 			Description: "64-bit unsigned integer",
 			UndefinedDefault: DefaultInfo{
 				Value: uint64(30),
@@ -61,7 +61,7 @@ func TestDefaultFormatter(t *testing.T) {
 		},
 		{
 			Names:       []string{"--float"},
-			Type:        "float64",
+			Type:        TypeFloat64,
 			Description: "Floating-point value",
 			UndefinedDefault: DefaultInfo{
 				Value: 1.5,
@@ -88,7 +88,7 @@ func TestDefaultFormatterRequired(t *testing.T) {
 	flags := []Info{
 		{
 			Names:       []string{"-i", "--input"},
-			Type:        "string",
+			Type:        TypeString,
 			Description: "Input file",
 			Required:    true,
 		},
@@ -106,7 +106,7 @@ func TestDefaultFormatterOptionalAndUndefinedDefaults(t *testing.T) {
 	flags := []Info{
 		{
 			Names:       []string{"-c", "--cover"},
-			Type:        "int",
+			Type:        TypeInt,
 			Description: "Cover index",
 
 			OptionalDefault: DefaultInfo{

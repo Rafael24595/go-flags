@@ -9,7 +9,7 @@ import (
 
 func TestNewWithoutNames(t *testing.T) {
 	assert.Panic(t, func() {
-		New(IntParser, "unknown", "test")
+		New(TypeInt, IntParser, "test")
 	})
 }
 
@@ -20,7 +20,7 @@ func TestFlagCustomParser(t *testing.T) {
 		return 0, expected
 	}
 
-	flag := New(parser, "unknown", "test", "-t")
+	flag := New(TypeUnknown, parser, "test", "-t")
 
 	err := flag.parse("value")
 
@@ -29,7 +29,7 @@ func TestFlagCustomParser(t *testing.T) {
 }
 
 func TestFlagDefaultOptional(t *testing.T) {
-	flag := New(IntParser, "test", "-t").
+	flag := New(TypeInt, IntParser, "test", "-t").
 		DefaultOptional(10)
 
 	assert.True(t, flag.isOptional())
@@ -41,7 +41,7 @@ func TestFlagDefaultOptional(t *testing.T) {
 }
 
 func TestFlagDefaultUndefined(t *testing.T) {
-	flag := New(IntParser, "test", "-t").
+	flag := New(TypeInt, IntParser, "test", "-t").
 		DefaultUndefined(-1)
 
 	flag.applyUndefinedDefault()
@@ -51,14 +51,14 @@ func TestFlagDefaultUndefined(t *testing.T) {
 }
 
 func TestFlagRequired(t *testing.T) {
-	flag := New(IntParser, "test", "-t").
+	flag := New(TypeInt, IntParser, "test", "-t").
 		Required()
 
 	assert.True(t, flag.isRequired())
 }
 
 func TestFlagParse(t *testing.T) {
-	flag := New(IntParser, "test", "-t")
+	flag := New(TypeInt, IntParser, "test", "-t")
 
 	assert.Nil(t, flag.parse("42"))
 
@@ -67,14 +67,14 @@ func TestFlagParse(t *testing.T) {
 }
 
 func TestFlagParseError(t *testing.T) {
-	flag := New(IntParser, "test", "-t")
+	flag := New(TypeInt, IntParser, "test", "-t")
 
 	assert.NotNil(t, flag.parse("invalid"))
 	assert.False(t, flag.isSet())
 }
 
 func TestFlagAliases(t *testing.T) {
-	flag := New(IntParser, "test", "-t", "--test")
+	flag := New(TypeInt, IntParser, "test", "-t", "--test")
 
 	got := flag.aliases()
 
