@@ -9,6 +9,12 @@ import (
 func TestDefaultFormatter(t *testing.T) {
 	flags := []Info{
 		{
+			Names:       []string{"-h", "--help"},
+			Type:        TypeVoid,
+			Description: "Shows this message",
+			Void:        true,
+		},
+		{
 			Names:       []string{"-b", "--bool"},
 			Type:        TypeBool,
 			Description: "Enable verbose output",
@@ -72,7 +78,8 @@ func TestDefaultFormatter(t *testing.T) {
 
 	got := DefaultFormatter(flags)
 
-	want := "\nOptions:\n\n"
+	want := "\nOptions:\n"
+	want += "  -h, --help             Shows this message\n"
 	want += "  -b, --bool    bool     Enable verbose output\n"
 	want += "  -s, --string  string   Input file (required) [default: input.txt]\n"
 	want += "  -i, --int     int      Number of items [default: 10]\n"
@@ -96,7 +103,7 @@ func TestDefaultFormatterRequired(t *testing.T) {
 
 	got := DefaultFormatter(flags)
 
-	want := "\nOptions:\n\n"
+	want := "\nOptions:\n"
 	want += "  -i, --input  string  Input file (required)\n\n"
 
 	assert.Equal(t, want, got)
@@ -123,7 +130,7 @@ func TestDefaultFormatterOptionalAndUndefinedDefaults(t *testing.T) {
 
 	got := DefaultFormatter(flags)
 
-	want := "\nOptions:\n\n"
+	want := "\nOptions:\n"
 	want += "  -c, --cover  int  Cover index [default: -1] [optional: 0]\n\n"
 
 	assert.Equal(t, want, got)
@@ -145,8 +152,8 @@ func TestDefaultFormatterWithoutType(t *testing.T) {
 
 	got := DefaultFormatter(flags)
 
-	want := "\nOptions:\n\n"
-	want += "  -v, --verbose  Enable verbose output\n\n"
+	want := "\nOptions:\n"
+	want += "  -v, --verbose    Enable verbose output\n\n"
 
 	assert.Equal(t, want, got)
 }

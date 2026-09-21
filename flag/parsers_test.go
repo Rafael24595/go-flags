@@ -6,6 +6,24 @@ import (
 	assert "github.com/Rafael24595/go-assert/assert/test"
 )
 
+func TestVoidParser(t *testing.T) {
+	tests := []string{
+		"",
+		"true",
+		"false",
+		"anything",
+	}
+
+	for _, input := range tests {
+		t.Run(input, func(t *testing.T) {
+			value, err := VoidParser(input)
+
+			assert.Nil(t, err)
+			assert.Equal(t, input, value)
+		})
+	}
+}
+
 func TestBoolParser(t *testing.T) {
 	tests := []struct {
 		input string

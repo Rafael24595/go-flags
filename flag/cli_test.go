@@ -196,6 +196,29 @@ func TestCLIParseUnknownOption(t *testing.T) {
 	assert.ErrorIs(t, ErrUnknownOption, err)
 }
 
+func TestCLIParseVoidWithValue(t *testing.T) {
+	cli := NewCLI()
+
+	cli.Void("verbose", "-v")
+
+	err := cli.parse([]string{"-v", "true"})
+
+	assert.ErrorIs(t, ErrUnexpectedValue, err)
+}
+
+func TestCLIParseVoidBeforeAnotherFlag(t *testing.T) {
+	cli := NewCLI()
+
+	verbose := cli.Void("verbose", "-v")
+	input := cli.String("input", "-i")
+
+	err := cli.parse([]string{"-v", "-i", "file.go"})
+
+	assert.Nil(t, err)
+	assert.True(t, verbose.IsPresent())
+	assert.Equal(t, "file.go", input.Value())
+}
+
 func TestCLIParseNegativeValue(t *testing.T) {
 	cli := NewCLI()
 

@@ -29,7 +29,7 @@ func DefaultFormatter(flags []Info) string {
 
 	var sb strings.Builder
 
-	sb.WriteString("\nOptions:\n\n")
+	sb.WriteString("\nOptions:\n")
 
 	for _, flag := range flags {
 		names := strings.Join(flag.Names, ", ")
@@ -38,10 +38,13 @@ func DefaultFormatter(flags []Info) string {
 		fmt.Fprintf(&sb, "%-*s", nameWidth, names)
 		sb.WriteString("  ")
 
-		if flag.Type != "" {
-			fmt.Fprintf(&sb, "%-*s", typeWidth, flag.Type)
-			sb.WriteString("  ")
+		flagType := flag.Type
+		if flag.Void {
+			flagType = ""
 		}
+
+		fmt.Fprintf(&sb, "%-*s", typeWidth, flagType)
+		sb.WriteString("  ")
 
 		sb.WriteString(flag.Description)
 

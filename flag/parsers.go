@@ -5,6 +5,13 @@ import "strconv"
 // Parser converts a command-line argument from a string into a value of type T.
 type Parser[T any] func(string) (T, error)
 
+// VoidParser returns the input string unchanged.
+//
+// It can be used by options that do not require an argument.
+func VoidParser(value string) (string, error) {
+	return StringParser(value)
+}
+
 // BoolParser parses a boolean value.
 //
 // Accepted values are those supported by strconv.ParseBool.

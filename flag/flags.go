@@ -1,5 +1,15 @@
 package flag
 
+// VoidFlag creates a flag that does not require an argument.
+//
+// When the flag is present, its value is the empty string.
+//
+// It is equivalent to calling New with VoidParser and marking the flag
+// as void.
+func VoidFlag(description string, names ...string) *Flag[string] {
+	return New(TypeVoid, VoidParser, description, names...).Void()
+}
+
 // BoolFlag creates a flag that parses boolean values.
 //
 // It is equivalent to calling New with BoolParser.

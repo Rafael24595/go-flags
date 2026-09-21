@@ -17,6 +17,13 @@ func NewCLI() *CLI {
 	return &CLI{}
 }
 
+ // Void registers a void option.
+func (c *CLI) Void(description string, names ...string) *Flag[string] {
+	flag := VoidFlag(description, names...)
+	c.add(flag)
+	return flag
+}
+
 // Bool registers a boolean option.
 func (c *CLI) Bool(description string, names ...string) *Flag[bool] {
 	flag := BoolFlag(description, names...)
@@ -103,6 +110,14 @@ func (c *CLI) parse(args []string) error {
 		isNextArg := false
 		if lenArgs > 0 {
 			_, isNextArg = lookup[args[0]]
+		}
+
+		if flag.isVoid() {
+			if !isNextArg {
+				return fmt.Errorf("%w: %s", ErrUnexpectedValue, arg)
+			}
+
+			continue
 		}
 
 		if lenArgs == 0 || isNextArg {

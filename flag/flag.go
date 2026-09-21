@@ -5,6 +5,7 @@ type flag interface {
 	aliases() []string
 	isSet() bool
 	isPresent() bool
+	isVoid() bool
 	isOptional() bool
 	isRequired() bool
 	markPresent()
@@ -30,13 +31,15 @@ type Info struct {
 	// Description is a human-readable description of the option.
 	Description string
 
+	// Void indicates whether the option is a void flag that does not require an argument.
+	Void bool
 	// Required indicates whether the option is required.
 	Required bool
 
-	// OptionalDefault is the default value used when the option is provided without
-	OptionalDefault  DefaultInfo
 	// UndefinedDefault is the default value used when the option is not provided.
 	UndefinedDefault DefaultInfo
+	// OptionalDefault is the default value used when the option is provided without
+	OptionalDefault DefaultInfo
 }
 
 // Flag represents a command-line flag and its configuration.
@@ -49,6 +52,8 @@ type Flag[T any] struct {
 	typeName    TypeName
 	names       []string
 	description string
+
+	void bool
 
 	optionalDefault    T
 	hasOptionalDefault bool
@@ -89,6 +94,26 @@ func New[T any](
 	}
 }
 
+// Void marks the flag as an option that does not accept an argument.
+//
+// Optional and undefined default values are cleared, and the flag is
+// no longer required.
+func (f *Flag[T]) Void() *Flag[T] {
+	f.void = true
+
+	var zero T
+
+	f.undefinedDefault = zero
+	f.hasUndefinedDefault = false
+
+	f.optionalDefault = zero
+	f.hasOptionalDefault = false
+
+	f.required = false
+
+	return f
+}
+
 // DefaultUndefined sets the value used when the flag is not provided.
 //
 // This default is applied when the flag is completely absent from the
@@ -103,6 +128,9 @@ func New[T any](
 func (f *Flag[T]) DefaultUndefined(value T) *Flag[T] {
 	f.undefinedDefault = value
 	f.hasUndefinedDefault = true
+
+	f.void = false
+
 	return f
 }
 
@@ -119,12 +147,16 @@ func (f *Flag[T]) DefaultUndefined(value T) *Flag[T] {
 func (f *Flag[T]) DefaultOptional(value T) *Flag[T] {
 	f.optionalDefault = value
 	f.hasOptionalDefault = true
+
+	f.void = false
+
 	return f
 }
 
 // Required marks the flag as requiring a value when it is provided.
 func (f *Flag[T]) Required() *Flag[T] {
 	f.required = true
+	f.void = false
 	return f
 }
 
@@ -146,6 +178,7 @@ func (f *Flag[T]) info() Info {
 		Names:       names,
 		Type:        f.typeName,
 		Description: f.description,
+		Void:        f.void,
 		Required:    f.required,
 
 		OptionalDefault: DefaultInfo{
@@ -170,6 +203,10 @@ func (f *Flag[T]) isSet() bool {
 
 func (f *Flag[T]) isPresent() bool {
 	return f.present
+}
+
+func (f *Flag[T]) isVoid() bool {
+	return f.void
 }
 
 func (f *Flag[T]) isOptional() bool {
