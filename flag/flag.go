@@ -143,7 +143,7 @@ func (f *Flag[T]) info() Info {
 	copy(names, f.names)
 
 	return Info{
-		Names:       append([]string(nil), f.names...),
+		Names:       names,
 		Type:        f.typeName,
 		Description: f.description,
 		Required:    f.required,
