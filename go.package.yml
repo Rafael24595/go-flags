@@ -1,0 +1,6 @@
+version: '1.1'
+
+project:
+  name: go-flags
+  version: v0.5.0
+  description: Go Flags
