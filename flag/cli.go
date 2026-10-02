@@ -105,6 +105,10 @@ func (c *CLI) parse(args []string) error {
 			return fmt.Errorf("%w: %s", ErrUnknownOption, arg)
 		}
 
+		if flag.isPresent() {
+			return fmt.Errorf("%w: %s", ErrDuplicateOption, arg)
+		}
+
 		flag.markPresent()
 
 		isNextArg := false

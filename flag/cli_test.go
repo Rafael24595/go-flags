@@ -196,6 +196,16 @@ func TestCLIParseUnknownOption(t *testing.T) {
 	assert.ErrorIs(t, ErrUnknownOption, err)
 }
 
+func TestCLIParseDuplicateOption(t *testing.T) {
+	cli := NewCLI()
+
+	_ = cli.Void("unknown", "--unknown")
+
+	err := cli.ParseWith([]string{"--unknown", "--unknown"})
+
+	assert.ErrorIs(t, ErrDuplicateOption, err)
+}
+
 func TestCLIParseVoidWithValue(t *testing.T) {
 	cli := NewCLI()
 
