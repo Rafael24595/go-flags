@@ -113,7 +113,7 @@ func (c *CLI) parse(args []string) error {
 		}
 
 		if flag.isVoid() {
-			if !isNextArg {
+			if lenArgs > 0 && !isNextArg {
 				return fmt.Errorf("%w: %s", ErrUnexpectedValue, arg)
 			}
 

@@ -219,6 +219,19 @@ func TestCLIParseVoidBeforeAnotherFlag(t *testing.T) {
 	assert.Equal(t, "file.go", input.Value())
 }
 
+func TestCLIParseVoidAtEnd(t *testing.T) {
+	cli := NewCLI()
+
+	input := cli.String("input", "-i")
+	verbose := cli.Void("verbose", "-v")
+
+	err := cli.ParseWith([]string{"-i", "file.go", "-v"})
+
+	assert.Nil(t, err)
+	assert.Equal(t, "file.go", input.Value())
+	assert.True(t, verbose.IsPresent())
+}
+
 func TestCLIParseNegativeValue(t *testing.T) {
 	cli := NewCLI()
 
