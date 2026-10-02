@@ -8,6 +8,7 @@ type flag interface {
 	isVoid() bool
 	isOptional() bool
 	isRequired() bool
+	reset()
 	markPresent()
 	parse(string) error
 	applyOptionalDefault()
@@ -215,6 +216,13 @@ func (f *Flag[T]) isOptional() bool {
 
 func (f *Flag[T]) isRequired() bool {
 	return f.required
+}
+
+func (f *Flag[T]) reset() {
+	var zero T
+	f.present = false
+	f.value = zero
+	f.set = false
 }
 
 func (f *Flag[T]) markPresent() {

@@ -17,7 +17,7 @@ func NewCLI() *CLI {
 	return &CLI{}
 }
 
- // Void registers a void option.
+// Void registers a void option.
 func (c *CLI) Void(description string, names ...string) *Flag[string] {
 	flag := VoidFlag(description, names...)
 	c.add(flag)
@@ -83,12 +83,18 @@ func (c *CLI) add(f flag) {
 // is missing, an option value cannot be parsed, or a required option was not
 // provided.
 func (c *CLI) Parse() error {
-	return c.parse(os.Args[1:])
+	return c.ParseWith(os.Args[1:])
 }
 
-func (c *CLI) parse(args []string) error {
+// ParseWith parses the given command-line arguments.
+//
+// It returns an error if an unknown option is encountered, a required value
+// is missing, an option value cannot be parsed, or a required option was not
+// provided.
+func (c *CLI) ParseWith(args []string) error {
 	lookup := make(map[string]flag)
 	for _, f := range c.flags {
+		f.reset()
 		for _, name := range f.aliases() {
 			lookup[name] = f
 		}

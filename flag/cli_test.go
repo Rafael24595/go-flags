@@ -39,7 +39,7 @@ func TestCLIParseValue(t *testing.T) {
 
 	port := cli.Int("port", "-p")
 
-	err := cli.parse([]string{"-p", "8080"})
+	err := cli.ParseWith([]string{"-p", "8080"})
 
 	assert.Nil(t, err)
 	assert.True(t, port.IsPresent())
@@ -52,7 +52,7 @@ func TestCLIParseAlias(t *testing.T) {
 
 	port := cli.Int("port", "-p", "--port")
 
-	err := cli.parse([]string{"--port", "8080"})
+	err := cli.ParseWith([]string{"--port", "8080"})
 
 	assert.Nil(t, err)
 	assert.True(t, port.IsPresent())
@@ -65,7 +65,7 @@ func TestCLIParseDefaultUndefined(t *testing.T) {
 	port := cli.Int("port", "-p").
 		DefaultUndefined(8080)
 
-	err := cli.parse(nil)
+	err := cli.ParseWith(nil)
 
 	assert.Nil(t, err)
 	assert.False(t, port.IsPresent())
@@ -79,7 +79,7 @@ func TestCLIParseDefaultOptional(t *testing.T) {
 	verbose := cli.Bool("verbose", "-v").
 		DefaultOptional(true)
 
-	err := cli.parse([]string{"-v"})
+	err := cli.ParseWith([]string{"-v"})
 
 	assert.Nil(t, err)
 	assert.True(t, verbose.IsPresent())
@@ -95,7 +95,7 @@ func TestCLIParseOptionalBeforeAnotherFlag(t *testing.T) {
 
 	port := cli.Int("port", "-p")
 
-	err := cli.parse([]string{"-v", "-p", "8080"})
+	err := cli.ParseWith([]string{"-v", "-p", "8080"})
 
 	assert.Nil(t, err)
 	assert.True(t, verbose.IsPresent())
@@ -109,7 +109,7 @@ func TestCLIParseExplicitValueOverridesOptionalDefault(t *testing.T) {
 	verbose := cli.Bool("verbose", "-v").
 		DefaultOptional(true)
 
-	err := cli.parse([]string{"-v", "false"})
+	err := cli.ParseWith([]string{"-v", "false"})
 
 	assert.Nil(t, err)
 	assert.True(t, verbose.IsPresent())
@@ -122,7 +122,7 @@ func TestCLIParseRequired(t *testing.T) {
 	input := cli.String("input", "-i").
 		Required()
 
-	err := cli.parse([]string{"-i", "file.go"})
+	err := cli.ParseWith([]string{"-i", "file.go"})
 
 	assert.Nil(t, err)
 	assert.True(t, input.IsPresent())
@@ -135,7 +135,7 @@ func TestCLIParseRequiredMissing(t *testing.T) {
 	input := cli.String("input", "-i").
 		Required()
 
-	err := cli.parse(nil)
+	err := cli.ParseWith(nil)
 
 	assert.ErrorIs(t, ErrRequiredOption, err)
 	assert.False(t, input.IsPresent())
@@ -148,7 +148,7 @@ func TestCLIParseRequiredWithOptionalDefault(t *testing.T) {
 		Required().
 		DefaultOptional("stdin")
 
-	err := cli.parse([]string{"-i"})
+	err := cli.ParseWith([]string{"-i"})
 
 	assert.Nil(t, err)
 	assert.True(t, input.IsPresent())
@@ -160,7 +160,7 @@ func TestCLIParseMissingValue(t *testing.T) {
 
 	cli.String("input", "-i")
 
-	err := cli.parse([]string{"-i"})
+	err := cli.ParseWith([]string{"-i"})
 
 	assert.ErrorIs(t, ErrMissingValue, err)
 }
@@ -172,7 +172,7 @@ func TestCLIParseMissingValueBeforeAnotherFlag(t *testing.T) {
 	cli.Bool("verbose", "-v").
 		DefaultOptional(true)
 
-	err := cli.parse([]string{"-i", "-v"})
+	err := cli.ParseWith([]string{"-i", "-v"})
 
 	assert.ErrorIs(t, ErrMissingValue, err)
 }
@@ -182,7 +182,7 @@ func TestCLIParseInvalidValue(t *testing.T) {
 
 	value := cli.Int("value", "-v")
 
-	err := cli.parse([]string{"-v", "invalid"})
+	err := cli.ParseWith([]string{"-v", "invalid"})
 
 	assert.ErrorIs(t, ErrInvalidValue, err)
 	assert.False(t, value.isSet())
@@ -191,7 +191,7 @@ func TestCLIParseInvalidValue(t *testing.T) {
 func TestCLIParseUnknownOption(t *testing.T) {
 	cli := NewCLI()
 
-	err := cli.parse([]string{"--unknown"})
+	err := cli.ParseWith([]string{"--unknown"})
 
 	assert.ErrorIs(t, ErrUnknownOption, err)
 }
@@ -211,7 +211,7 @@ func TestCLIParseVoidWithValue(t *testing.T) {
 
 	cli.Void("verbose", "-v")
 
-	err := cli.parse([]string{"-v", "true"})
+	err := cli.ParseWith([]string{"-v", "true"})
 
 	assert.ErrorIs(t, ErrUnexpectedValue, err)
 }
@@ -222,7 +222,7 @@ func TestCLIParseVoidBeforeAnotherFlag(t *testing.T) {
 	verbose := cli.Void("verbose", "-v")
 	input := cli.String("input", "-i")
 
-	err := cli.parse([]string{"-v", "-i", "file.go"})
+	err := cli.ParseWith([]string{"-v", "-i", "file.go"})
 
 	assert.Nil(t, err)
 	assert.True(t, verbose.IsPresent())
@@ -247,7 +247,7 @@ func TestCLIParseNegativeValue(t *testing.T) {
 
 	value := cli.Int("value", "-v")
 
-	err := cli.parse([]string{"-v", "-10"})
+	err := cli.ParseWith([]string{"-v", "-10"})
 
 	assert.Nil(t, err)
 	assert.Equal(t, -10, value.Value())
@@ -261,7 +261,7 @@ func TestCLIParseMultipleFlags(t *testing.T) {
 	verbose := cli.Bool("verbose", "-v").
 		DefaultOptional(true)
 
-	err := cli.parse([]string{
+	err := cli.ParseWith([]string{
 		"-i", "input.mp3",
 		"-p", "8080",
 		"-v",
@@ -276,4 +276,19 @@ func TestCLIParseMultipleFlags(t *testing.T) {
 	assert.True(t, input.IsPresent())
 	assert.True(t, port.IsPresent())
 	assert.True(t, verbose.IsPresent())
+}
+
+func TestCLIParseResetBetweenRuns(t *testing.T) {
+    cli := NewCLI()
+    input := cli.String("input", "-i")
+
+    err := cli.ParseWith([]string{"-i", "first.go"})
+    assert.Nil(t, err)
+    assert.True(t, input.IsPresent())
+    assert.Equal(t, "first.go", input.Value())
+
+    err = cli.ParseWith([]string{})
+    assert.Nil(t, err)
+    assert.False(t, input.IsPresent())
+    assert.Equal(t, "", input.Value())
 }
