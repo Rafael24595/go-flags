@@ -15,6 +15,14 @@ type flag interface {
 	applyUndefinedDefault()
 }
 
+// CLIInfo contains the metadata used to format a command-line interface.
+type CLIInfo struct {
+	// Flags is a list of all registered command-line options.
+    Flags       []Info
+	// Adapters is a list of all registered command-line adapters.
+    Adapters    []string
+}
+
 // DefaultInfo describes a default value associated with an option.
 type DefaultInfo struct {
 	// Value is the default value.

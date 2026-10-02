@@ -10,7 +10,7 @@ import (
 // The formatter receives all registered options at once, allowing it to
 // calculate column widths or otherwise use information from the complete
 // option set before producing the output.
-type Formatter func([]Info) string
+type Formatter func(CLIInfo) string
 
 // DefaultFormatter formats command-line options as a human-readable table.
 //
@@ -20,18 +20,18 @@ type Formatter func([]Info) string
 //
 // The formatter aligns option names and value types into columns based on the
 // widest value in the complete option set.
-func DefaultFormatter(flags []Info) string {
-	if len(flags) == 0 {
+func DefaultFormatter(info CLIInfo) string {
+	if len(info.Flags) == 0 {
 		return ""
 	}
 
-	nameWidth, typeWidth := maxWidths(flags)
+	nameWidth, typeWidth := maxWidths(info.Flags)
 
 	var sb strings.Builder
 
 	sb.WriteString("\nOptions:\n")
 
-	for _, flag := range flags {
+	for _, flag := range info.Flags {
 		names := strings.Join(flag.Names, ", ")
 
 		sb.WriteString("  ")
@@ -63,8 +63,18 @@ func DefaultFormatter(flags []Info) string {
 		sb.WriteByte('\n')
 	}
 
-	sb.WriteByte('\n')
+	if len(info.Adapters) == 0 {
+		sb.WriteByte('\n')
+		return sb.String()
+	}
 
+	sb.WriteString("\nSupported Syntax Features:\n")
+
+	for _, adapter := range info.Adapters {
+		fmt.Fprintf(&sb, "  - %s\n", adapter)
+	}
+
+	sb.WriteByte('\n')
 	return sb.String()
 }
 

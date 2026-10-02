@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	assert "github.com/Rafael24595/go-assert/assert/test"
+	"github.com/Rafael24595/go-flags/flag/adapter"
 )
 
 func TestDefaultFormatter(t *testing.T) {
@@ -76,7 +77,10 @@ func TestDefaultFormatter(t *testing.T) {
 		},
 	}
 
-	got := DefaultFormatter(flags)
+	got := DefaultFormatter(CLIInfo{
+		Flags:    flags,
+		Adapters: []string{adapter.KeyValueDescription},
+	})
 
 	want := "\nOptions:\n"
 	want += "  -h, --help             Shows this message\n"
@@ -87,6 +91,9 @@ func TestDefaultFormatter(t *testing.T) {
 	want += "  --uint        uint     Unsigned integer [default: 20]\n"
 	want += "  --uint64      uint64   64-bit unsigned integer [default: 30]\n"
 	want += "  --float       float64  Floating-point value [default: 1.5]\n\n"
+
+	want += "Supported Syntax Features:\n"
+	want += "  - " + adapter.KeyValueDescription + "\n\n"
 
 	assert.Equal(t, want, got)
 }
@@ -101,7 +108,9 @@ func TestDefaultFormatterRequired(t *testing.T) {
 		},
 	}
 
-	got := DefaultFormatter(flags)
+	got := DefaultFormatter(CLIInfo{
+		Flags: flags,
+	})
 
 	want := "\nOptions:\n"
 	want += "  -i, --input  string  Input file (required)\n\n"
@@ -128,7 +137,9 @@ func TestDefaultFormatterOptionalAndUndefinedDefaults(t *testing.T) {
 		},
 	}
 
-	got := DefaultFormatter(flags)
+	got := DefaultFormatter(CLIInfo{
+		Flags: flags,
+	})
 
 	want := "\nOptions:\n"
 	want += "  -c, --cover  int  Cover index [default: -1] [optional: 0]\n\n"
@@ -137,7 +148,7 @@ func TestDefaultFormatterOptionalAndUndefinedDefaults(t *testing.T) {
 }
 
 func TestDefaultFormatterEmpty(t *testing.T) {
-	got := DefaultFormatter(nil)
+	got := DefaultFormatter(CLIInfo{})
 
 	assert.Empty(t, got)
 }
@@ -150,7 +161,9 @@ func TestDefaultFormatterWithoutType(t *testing.T) {
 		},
 	}
 
-	got := DefaultFormatter(flags)
+	got := DefaultFormatter(CLIInfo{
+		Flags: flags,
+	})
 
 	want := "\nOptions:\n"
 	want += "  -v, --verbose    Enable verbose output\n\n"

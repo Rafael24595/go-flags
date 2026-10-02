@@ -5,16 +5,24 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/Rafael24595/go-flags/flag/adapter"
 )
 
 // CLI parses command-line arguments and stores the registered options.
 type CLI struct {
-	flags []flag
+	flags    []flag
+	adapters []adapter.Adapter
 }
 
 // NewCLI creates a new command-line parser.
 func NewCLI() *CLI {
 	return &CLI{}
+}
+
+// Use registers one or more command-line adapters.
+func (c *CLI) Use(adapters ...adapter.Adapter) {
+    c.adapters = append(c.adapters, adapters...)
 }
 
 // Void registers a void option.
@@ -92,6 +100,10 @@ func (c *CLI) Parse() error {
 // is missing, an option value cannot be parsed, or a required option was not
 // provided.
 func (c *CLI) ParseWith(args []string) error {
+	for _, adapter := range c.adapters {
+        args = adapter.Transform(args)
+    }
+
 	lookup := make(map[string]flag)
 	for _, f := range c.flags {
 		f.reset()
@@ -161,12 +173,12 @@ func (c *CLI) ParseWith(args []string) error {
 	return nil
 }
 
-// WriteOptions writes the registered options to stdout using the default formatter.
+// WriteOptions writes the registered options and adapters to stdout using the default formatter.
 func (c *CLI) WriteOptions() error {
 	return c.WriteOptionsWith(os.Stdout, DefaultFormatter)
 }
 
-// WriteOptionsWith writes the registered options to the given writer using the
+// WriteOptionsWith writes the registered options and adapters to the given writer using the
 // given formatter.
 func (c *CLI) WriteOptionsWith(
 	writer io.Writer,
@@ -177,11 +189,20 @@ func (c *CLI) WriteOptionsWith(
 	return err
 }
 
-// FormatOptions formats the registered options using the given formatter.
+// FormatOptions formats the registered options and adapters using the given formatter.
 func (c *CLI) FormatOptions(formatter Formatter) string {
-	infos := make([]Info, 0, len(c.flags))
+	flags := make([]Info, 0, len(c.flags))
 	for _, f := range c.flags {
-		infos = append(infos, f.info())
+		flags = append(flags, f.info())
 	}
-	return formatter(infos)
+
+	adapters := make([]string, 0, len(c.adapters))
+	for _, a := range c.adapters {
+		adapters = append(adapters, a.Description)
+	}
+
+	return formatter(CLIInfo{
+		Flags:    flags,
+		Adapters: adapters,
+	})
 }
