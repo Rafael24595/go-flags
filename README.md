@@ -421,6 +421,7 @@ The package exposes sentinel errors for common parsing failures:
 
 ```go
 flag.ErrUnknownOption
+flag.ErrDuplicateOption
 flag.ErrUnexpectedValue
 flag.ErrMissingValue
 flag.ErrRequiredOption
@@ -434,6 +435,8 @@ if err := cli.Parse(); err != nil {
 	switch {
 	case errors.Is(err, flag.ErrUnknownOption):
 		fmt.Println("unknown option")
+	case errors.Is(err, flag.ErrDuplicateOption):
+    	fmt.Println("option was provided more than once")
 	case errors.Is(err, flag.ErrMissingValue):
 		fmt.Println("missing option value")
 	case errors.Is(err, flag.ErrRequiredOption):
@@ -447,6 +450,54 @@ if err := cli.Parse(); err != nil {
 ```
 
 Errors preserve their underlying sentinel value when additional context is included, so `errors.Is` can be used reliably.
+
+## Testing your CLI application
+
+`go-flags` makes it easy to test your CLI configuration without modifying global `os.Args` or launching external processes. 
+
+Use `ParseWith` inside unit tests to verify how your application handles different flags and edge cases:
+
+```go
+func TestCLI(t *testing.T) {
+    t.Parallel()
+
+    tests := []struct {
+        name    string
+        args    []string
+        wantErr error
+    }{
+        {
+            name:    "valid input",
+            args:    []string{"-i", "input.txt", "-w", "4"},
+            wantErr: nil,
+        },
+        {
+            name:    "missing required option",
+            args:    []string{"-w", "4"},
+            wantErr: flag.ErrRequiredOption,
+        },
+        {
+            name:    "duplicate option",
+            args:    []string{"-i", "file1.txt", "-i", "file2.txt"},
+            wantErr: flag.ErrDuplicateOption,
+        },
+    }
+
+    for _, tt := range tests {
+        tt := tt
+        t.Run(tt.name, func(t *testing.T) {
+            t.Parallel()
+            
+            cli := setupCLI() // Helper that registers your flags
+            err := cli.ParseWith(tt.args)
+
+            if !errors.Is(err, tt.wantErr) {
+                t.Errorf("got error %v, want %v", err, tt.wantErr)
+            }
+        })
+    }
+}
+```
 
 ## Formatting options
 
@@ -499,7 +550,7 @@ tabular representation similar to:
 ```text
 
 Options:
-  -h, --hwlp             Shows this message
+  -h, --help             Shows this message
   -i, --input    string  Path to the input file (required)
   -o, --output   string  Destination directory [default: download]
   -w, --workers  uint    Number of workers [default: 4]
