@@ -22,7 +22,7 @@ func NewCLI() *CLI {
 
 // Use registers one or more command-line adapters.
 func (c *CLI) Use(adapters ...adapter.Adapter) {
-    c.adapters = append(c.adapters, adapters...)
+	c.adapters = append(c.adapters, adapters...)
 }
 
 // Add registers a command-line flag.
@@ -106,8 +106,8 @@ func (c *CLI) Parse() error {
 // provided.
 func (c *CLI) ParseWith(args []string) error {
 	for _, adapter := range c.adapters {
-        args = adapter.Transform(args)
-    }
+		args = adapter.Transform(args)
+	}
 
 	lookup := make(map[string]flag)
 	for _, f := range c.flags {
