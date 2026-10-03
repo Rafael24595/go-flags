@@ -9,7 +9,7 @@ import (
 
 func TestNewWithoutNames(t *testing.T) {
 	assert.Panic(t, func() {
-		New(TypeInt, IntParser, "test")
+		NewFlag(TypeInt, IntParser, "test")
 	})
 }
 
@@ -20,7 +20,7 @@ func TestFlagCustomParser(t *testing.T) {
 		return 0, expected
 	}
 
-	flag := New(TypeUnknown, parser, "test", "-t")
+	flag := NewFlag(TypeUnknown, parser, "test", "-t")
 
 	err := flag.parse("value")
 
@@ -29,7 +29,7 @@ func TestFlagCustomParser(t *testing.T) {
 }
 
 func TestFlagVoid(t *testing.T) {
-	flag := New(TypeVoid, VoidParser, "test", "-v").
+	flag := NewFlag(TypeVoid, VoidParser, "test", "-v").
 		Void()
 
 	assert.True(t, flag.isVoid())
@@ -40,7 +40,7 @@ func TestFlagVoid(t *testing.T) {
 }
 
 func TestFlagVoidResetsConfiguration(t *testing.T) {
-	flag := New(TypeInt, IntParser, "int", "-c").
+	flag := NewFlag(TypeInt, IntParser, "int", "-c").
 		DefaultOptional(0).
 		DefaultUndefined(-1).
 		Required().
@@ -54,7 +54,7 @@ func TestFlagVoidResetsConfiguration(t *testing.T) {
 }
 
 func TestFlagDefaultUndefined(t *testing.T) {
-	flag := New(TypeInt, IntParser, "test", "-t").
+	flag := NewFlag(TypeInt, IntParser, "test", "-t").
 		DefaultUndefined(-1)
 
 	flag.applyUndefinedDefault()
@@ -64,7 +64,7 @@ func TestFlagDefaultUndefined(t *testing.T) {
 }
 
 func TestFlagDefaultUndefinedDisablesVoid(t *testing.T) {
-	flag := New(TypeVoid, VoidParser, "void", "-v").
+	flag := NewFlag(TypeVoid, VoidParser, "void", "-v").
 		Void().
 		DefaultUndefined("")
 
@@ -72,7 +72,7 @@ func TestFlagDefaultUndefinedDisablesVoid(t *testing.T) {
 }
 
 func TestFlagDefaultOptional(t *testing.T) {
-	flag := New(TypeInt, IntParser, "test", "-t").
+	flag := NewFlag(TypeInt, IntParser, "test", "-t").
 		DefaultOptional(10)
 
 	assert.True(t, flag.isOptional())
@@ -84,7 +84,7 @@ func TestFlagDefaultOptional(t *testing.T) {
 }
 
 func TestFlagDefaultOptionalDisablesVoid(t *testing.T) {
-	flag := New(TypeVoid, VoidParser, "void", "-v").
+	flag := NewFlag(TypeVoid, VoidParser, "void", "-v").
 		Void().
 		DefaultOptional("")
 
@@ -93,14 +93,14 @@ func TestFlagDefaultOptionalDisablesVoid(t *testing.T) {
 }
 
 func TestFlagRequired(t *testing.T) {
-	flag := New(TypeInt, IntParser, "test", "-t").
+	flag := NewFlag(TypeInt, IntParser, "test", "-t").
 		Required()
 
 	assert.True(t, flag.isRequired())
 }
 
 func TestFlagRequiredDisablesVoid(t *testing.T) {
-	flag := New(TypeVoid, VoidParser, "void", "-v").
+	flag := NewFlag(TypeVoid, VoidParser, "void", "-v").
 		Void().
 		Required()
 
@@ -109,7 +109,7 @@ func TestFlagRequiredDisablesVoid(t *testing.T) {
 }
 
 func TestFlagParse(t *testing.T) {
-	flag := New(TypeInt, IntParser, "test", "-t")
+	flag := NewFlag(TypeInt, IntParser, "test", "-t")
 
 	assert.Nil(t, flag.parse("42"))
 
@@ -118,14 +118,14 @@ func TestFlagParse(t *testing.T) {
 }
 
 func TestFlagParseError(t *testing.T) {
-	flag := New(TypeInt, IntParser, "test", "-t")
+	flag := NewFlag(TypeInt, IntParser, "test", "-t")
 
 	assert.NotNil(t, flag.parse("invalid"))
 	assert.False(t, flag.isSet())
 }
 
 func TestFlagInfo(t *testing.T) {
-	flag := New(TypeInt, IntParser, "Cover index", "-c", "--cover").
+	flag := NewFlag(TypeInt, IntParser, "Cover index", "-c", "--cover").
 		DefaultOptional(0).
 		DefaultUndefined(-1).
 		Required()
@@ -161,7 +161,7 @@ func TestVoidFlagInfo(t *testing.T) {
 }
 
 func TestFlagAliases(t *testing.T) {
-	flag := New(TypeInt, IntParser, "test", "-t", "--test")
+	flag := NewFlag(TypeInt, IntParser, "test", "-t", "--test")
 
 	got := flag.aliases()
 

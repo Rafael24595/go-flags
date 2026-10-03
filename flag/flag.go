@@ -42,15 +42,15 @@ type Flag[T any] struct {
 	set     bool
 }
 
-// New creates a new command-line flag using the given parser.
+// NewFlag creates a new command-line flag using the given parser.
 //
 // At least one name must be provided. Multiple names can be used to define
 // aliases for the same flag.
 //
 // For example:
 //
-// cover := New(IntParser, "Cover index", "-c", "--cover")
-func New[T any](
+// cover := NewFlag(IntParser, "Cover index", "-c", "--cover")
+func NewFlag[T any](
 	typeName TypeName,
 	parser Parser[T],
 	desc string,
