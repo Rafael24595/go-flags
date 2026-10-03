@@ -279,16 +279,16 @@ func TestCLIParseMultipleFlags(t *testing.T) {
 }
 
 func TestCLIParseResetBetweenRuns(t *testing.T) {
-    cli := NewCLI()
-    input := cli.String("input", "-i")
+	cli := NewCLI()
+	input := cli.String("input", "-i")
 
-    err := cli.ParseWith([]string{"-i", "first.go"})
-    assert.Nil(t, err)
-    assert.True(t, input.IsPresent())
-    assert.Equal(t, "first.go", input.Value())
+	err := cli.ParseWith([]string{"-i", "first.go"})
+	assert.Nil(t, err)
+	assert.True(t, input.IsPresent())
+	assert.Equal(t, "first.go", input.Value())
 
-    err = cli.ParseWith([]string{})
-    assert.Nil(t, err)
-    assert.False(t, input.IsPresent())
-    assert.Equal(t, "", input.Value())
+	err = cli.ParseWith([]string{})
+	assert.Nil(t, err)
+	assert.False(t, input.IsPresent())
+	assert.Equal(t, "", input.Value())
 }
