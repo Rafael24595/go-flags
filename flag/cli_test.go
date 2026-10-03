@@ -69,7 +69,7 @@ func TestCLIParseDefaultUndefined(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.False(t, port.IsPresent())
-	assert.True(t, port.isSet())
+	assert.True(t, port.set)
 	assert.Equal(t, 8080, port.Value())
 }
 
