@@ -25,59 +25,64 @@ func (c *CLI) Use(adapters ...adapter.Adapter) {
     c.adapters = append(c.adapters, adapters...)
 }
 
+// Add registers a command-line flag.
+func (c *CLI) Add(f flag) {
+	c.flags = append(c.flags, f)
+}
+
 // Void registers a void option.
 func (c *CLI) Void(description string, names ...string) *Flag[string] {
 	flag := VoidFlag(description, names...)
-	c.add(flag)
+	c.Add(flag)
 	return flag
 }
 
 // Bool registers a boolean option.
 func (c *CLI) Bool(description string, names ...string) *Flag[bool] {
 	flag := BoolFlag(description, names...)
-	c.add(flag)
+	c.Add(flag)
 	return flag
 }
 
 // String registers a string option.
 func (c *CLI) String(description string, names ...string) *Flag[string] {
 	flag := StringFlag(description, names...)
-	c.add(flag)
+	c.Add(flag)
 	return flag
 }
 
 // Int registers an integer option.
 func (c *CLI) Int(description string, names ...string) *Flag[int] {
 	flag := IntFlag(description, names...)
-	c.add(flag)
+	c.Add(flag)
 	return flag
 }
 
 // Int64 registers a 64-bit signed integer option.
 func (c *CLI) Int64(description string, names ...string) *Flag[int64] {
 	flag := Int64Flag(description, names...)
-	c.add(flag)
+	c.Add(flag)
 	return flag
 }
 
 // Uint registers an unsigned integer option.
 func (c *CLI) Uint(description string, names ...string) *Flag[uint] {
 	flag := UintFlag(description, names...)
-	c.add(flag)
+	c.Add(flag)
 	return flag
 }
 
 // Uint64 registers a 64-bit unsigned integer option.
 func (c *CLI) Uint64(description string, names ...string) *Flag[uint64] {
 	flag := Uint64Flag(description, names...)
-	c.add(flag)
+	c.Add(flag)
 	return flag
 }
 
 // Float64 registers a 64-bit floating-point option.
 func (c *CLI) Float64(description string, names ...string) *Flag[float64] {
 	flag := Float64Flag(description, names...)
-	c.add(flag)
+	c.Add(flag)
 	return flag
 }
 
