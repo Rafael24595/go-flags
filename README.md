@@ -10,7 +10,6 @@ It is designed to keep command-line configuration explicit while remaining easy 
 
 * Generic, type-safe flags using Go generics.
 * Built-in support for:
-
   * `bool`
   * `string`
   * `int`
@@ -19,6 +18,8 @@ It is designed to keep command-line configuration explicit while remaining easy 
   * `uint64`
   * `float64`
   * void options without arguments
+* Built-in support for slice options (e.g., `[]string`, `[]int`, `[]bool`).
+* Configurable list separators for slice arguments (default: `,`).
 * Short and long option names.
 * Optional values with configurable defaults.
 * Defaults for options that are not provided.
@@ -31,11 +32,12 @@ The standard library's flag package is a good choice for simple command-line pro
 
 go-flags focuses on a few specific ideas:
 
-Typed options. Each registered option has a concrete Flag[T] type, so its value can be retrieved without type assertions.
-Explicit defaults. DefaultUndefined and DefaultOptional distinguish between an option that was not provided and one that was provided without a value.
-Required options. Options can explicitly declare that they must be present on the command line.
-Custom parsers. Any value that can be parsed from a string can be integrated through Parser[T].
-Composable formatting. Option metadata is exposed through Info, allowing applications to use the default formatter or provide their own representation.
+* **Typed options.** Each registered option has a concrete `Flag[T]` or `SliceFlag[T]` type, so its value can be retrieved without type assertions.
+* **Slice support.** Collect multiple arguments by repeating flags or supplying delimited lists.
+* **Explicit defaults.** DefaultUndefined and DefaultOptional distinguish between an option that was not provided and one that was provided without a value.
+* **Required options.** Options can explicitly declare that they must be present on the command line.
+* **Custom parsers.** Any value that can be parsed from a string can be integrated through Parser[T].
+* **Composable formatting.** Option metadata is exposed through Info, allowing applications to use the default formatter or provide their own representation.
 Small API surface. The package focuses on registering options, parsing arguments, storing typed values, and reporting parsing errors.
 
 The goal is not to provide every possible command-line syntax. Instead, go-flags keeps the parser small and predictable while providing the configuration features commonly needed by typed command-line applications.
@@ -136,21 +138,25 @@ The first name is not treated differently from the others; all registered names 
 The CLI provides constructors for the supported built-in types:
 
 ```go
+// Single-value constructors
 cli.Void("Shows this help message", "-h", "--help",)
-
 cli.Bool("Enable verbose output", "-v", "--verbose")
-
 cli.String("Input file", "-i", "--input")
-
 cli.Int("Cover index", "-c", "--cover")
-
 cli.Int64("Maximum size", "--max-size")
-
 cli.Uint("Number of workers", "-w", "--workers")
-
 cli.Uint64("Maximum bytes", "--max-bytes")
-
 cli.Float64("Scale factor", "--scale")
+
+// Slice constructors
+cli.SliceBool("Boolean flags", "--bools")
+cli.SliceString("Input files", "-f", "--files")
+cli.SliceInt("Port list", "-p", "--ports")
+cli.SliceInt64("64-bit integer list", "--int64s")
+cli.SliceUint("Unsigned integer list", "--uints")
+cli.SliceUint64("64-bit unsigned integer list", "--uint64s")
+cli.SliceFloat64("Float list", "--floats")
+
 ```
 
 Each constructor returns a typed `*Flag[T]`, so its value can be retrieved without type assertions:
@@ -161,6 +167,44 @@ workers := cli.Uint("Number of workers", "-w", "--workers")
 // workers.Value() has type uint.
 value := workers.Value()
 ```
+## Slice options
+
+Slice flags accumulate multiple values. They support both multiple flags on the command line and delimited values within a single argument.
+
+### Basic slice usage
+
+```go
+tags := cli.SliceString("System tags", "-t", "--tags")
+```
+
+Values can be passed across multiple flags:
+
+```bash
+./app -t web -t api -t v2
+```
+
+Or as a single delimited argument:
+
+```bash
+./app -t web,api,v2
+```
+
+Both methods result in `tags.Value()` returning `[]string{"web", "api", "v2"}`.
+
+### Custom separators
+
+By default, slice options split arguments using a comma `,`. You can customize the separator character per flag using `.Separator()`:
+
+```go
+origins := cli.SliceString("Allowed CORS origins", "-o", "--origins").
+    Separator(';')
+```
+
+```bash
+./app --origins "[https://a.com](https://a.com);[https://b.com](https://b.com)"
+```
+
+The help description automatically updates to reflect the active separator (e.g., `Allowed CORS origins (separator: ';')`).
 
 ## Void options
 
@@ -227,19 +271,14 @@ output := cli.String(
 	"Destination directory",
 	"-o", "--output",
 ).DefaultUndefined("download")
+
+ports := cli.SliceInt(
+    "Target ports",
+    "-p", "--ports",
+).DefaultUndefined([]int{80, 443})
 ```
 
-Without the option:
-
-```bash
-./app
-```
-
-the value is:
-
-```go
-output.Value() // "download"
-```
+Without the options (`./app`), the values resolve to `"download"` and `[]int{80, 443}`.
 
 When the option is explicitly provided, its argument is parsed normally:
 
@@ -346,7 +385,7 @@ cover.Value() // 0
 
 ## Custom parsers
 
-The generic `New` function allows flags to use custom parsers.
+The generic `NewFlag` and `NewSliceFlag` functions allow flags to use custom parsers.
 
 A parser is a function with this signature:
 
@@ -365,11 +404,22 @@ func DurationParser(value string) (time.Duration, error) {
 It can then be used to create a typed flag:
 
 ```go
-timeout := flag.New(
+timeout := flag.NewFlag(
 	DurationParser,
 	flag.TypeString,
 	"Request timeout",
 	"--timeout",
+)
+```
+
+Or a slice flag using the same element parser:
+
+```go
+timeouts := flag.NewSlice(
+    flag.TypeString,
+    DurationParser,
+    "List of request timeouts",
+    "--timeouts",
 )
 ```
 
@@ -413,6 +463,12 @@ flag.TypeFloat64
 
 ```go
 flag.TypeName("duration")
+```
+
+To represent slice types in help output, call `.Slice()` on any `TypeName`:
+
+```go
+flag.TypeInt.Slice() // Produces TypeName("int[]")
 ```
 
 ## Parsing errors
@@ -552,6 +608,7 @@ tabular representation similar to:
 Options:
   -h, --help             Shows this message
   -i, --input    string  Path to the input file (required)
+  -p, --ports    int[]   Target server ports (separator: ',') [default: [80 443]]
   -o, --output   string  Destination directory [default: download]
   -w, --workers  uint    Number of workers [default: 4]
   -c, --cover    int     Cover index [default: -1] [optional: 0]
