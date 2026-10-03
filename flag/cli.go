@@ -121,57 +121,35 @@ func (c *CLI) ParseWith(args []string) error {
 		arg := args[0]
 		args = args[1:]
 
-		lenArgs := len(args)
-
 		flag, ok := lookup[arg]
 		if !ok {
 			return fmt.Errorf("%w: %s", ErrUnknownOption, arg)
 		}
 
-		if flag.isPresent() {
-			return fmt.Errorf("%w: %s", ErrDuplicateOption, arg)
-		}
+		var value *string
+		if len(args) > 0 {
+			nextArg := args[0]
 
-		flag.markPresent()
-
-		isNextArg := false
-		if lenArgs > 0 {
-			_, isNextArg = lookup[args[0]]
-		}
-
-		if flag.isVoid() {
-			if lenArgs > 0 && !isNextArg {
-				return fmt.Errorf("%w: %s", ErrUnexpectedValue, arg)
+			_, isNextFlag := lookup[nextArg]
+			if !isNextFlag {
+				value = &nextArg
 			}
-
-			continue
 		}
 
-		if lenArgs == 0 || isNextArg {
-			if !flag.isOptional() {
-				return fmt.Errorf("%w: %s", ErrMissingValue, arg)
-			}
-
-			flag.applyOptionalDefault()
-			continue
+		consumed, err := flag.process(value)
+		if err != nil {
+			return fmt.Errorf("%w: %s", err, arg)
 		}
 
-		value := args[0]
-		args = args[1:]
-
-		if err := flag.parse(value); err != nil {
-			return fmt.Errorf("%w for %s: %w", ErrInvalidValue, arg, err)
+		if consumed {
+			args = args[1:]
 		}
 	}
 
 	for _, flag := range c.flags {
-		if flag.isRequired() && !flag.isPresent() {
+		if err := flag.validate(); err != nil {
 			aliases := strings.Join(flag.aliases(), ", ")
-			return fmt.Errorf("%w: %s", ErrRequiredOption, aliases)
-		}
-
-		if !flag.isSet() {
-			flag.applyUndefinedDefault()
+			return fmt.Errorf("%w: %s", err, aliases)
 		}
 	}
 

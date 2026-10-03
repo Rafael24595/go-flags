@@ -22,9 +22,11 @@ func TestFlagCustomParser(t *testing.T) {
 
 	flag := NewFlag(TypeUnknown, parser, "test", "-t")
 
-	err := flag.parse("value")
+	value := "value"
+	consumed, err := flag.process(&value)
 
-	assert.False(t, flag.isSet())
+	assert.False(t, consumed)
+	assert.False(t, flag.set)
 	assert.ErrorIs(t, expected, err)
 }
 
@@ -32,11 +34,11 @@ func TestFlagVoid(t *testing.T) {
 	flag := NewFlag(TypeVoid, VoidParser, "test", "-v").
 		Void()
 
-	assert.True(t, flag.isVoid())
-	assert.False(t, flag.isOptional())
-	assert.False(t, flag.isRequired())
-	assert.False(t, flag.isSet())
-	assert.False(t, flag.isPresent())
+	assert.True(t, flag.void)
+	assert.False(t, flag.hasOptionalDefault)
+	assert.False(t, flag.required)
+	assert.False(t, flag.set)
+	assert.False(t, flag.present)
 }
 
 func TestFlagVoidResetsConfiguration(t *testing.T) {
@@ -46,9 +48,9 @@ func TestFlagVoidResetsConfiguration(t *testing.T) {
 		Required().
 		Void()
 
-	assert.True(t, flag.isVoid())
-	assert.False(t, flag.isOptional())
-	assert.False(t, flag.isRequired())
+	assert.True(t, flag.void)
+	assert.False(t, flag.hasOptionalDefault)
+	assert.False(t, flag.required)
 	assert.False(t, flag.hasOptionalDefault)
 	assert.False(t, flag.hasUndefinedDefault)
 }
@@ -57,9 +59,12 @@ func TestFlagDefaultUndefined(t *testing.T) {
 	flag := NewFlag(TypeInt, IntParser, "test", "-t").
 		DefaultUndefined(-1)
 
-	flag.applyUndefinedDefault()
+	assert.True(t, flag.hasUndefinedDefault)
 
-	assert.True(t, flag.isSet())
+	err := flag.validate()
+
+	assert.Nil(t, err)
+	assert.True(t, flag.set)
 	assert.Equal(t, -1, flag.Value())
 }
 
@@ -68,18 +73,20 @@ func TestFlagDefaultUndefinedDisablesVoid(t *testing.T) {
 		Void().
 		DefaultUndefined("")
 
-	assert.False(t, flag.isVoid())
+	assert.False(t, flag.void)
 }
 
 func TestFlagDefaultOptional(t *testing.T) {
 	flag := NewFlag(TypeInt, IntParser, "test", "-t").
 		DefaultOptional(10)
 
-	assert.True(t, flag.isOptional())
+	assert.True(t, flag.hasOptionalDefault)
 
-	flag.applyOptionalDefault()
+	consumed, err := flag.process(nil)
 
-	assert.True(t, flag.isSet())
+	assert.False(t, consumed)
+	assert.Nil(t, err)
+	assert.True(t, flag.set)
 	assert.Equal(t, 10, flag.Value())
 }
 
@@ -88,15 +95,15 @@ func TestFlagDefaultOptionalDisablesVoid(t *testing.T) {
 		Void().
 		DefaultOptional("")
 
-	assert.False(t, flag.isVoid())
-	assert.True(t, flag.isOptional())
+	assert.False(t, flag.void)
+	assert.True(t, flag.hasOptionalDefault)
 }
 
 func TestFlagRequired(t *testing.T) {
 	flag := NewFlag(TypeInt, IntParser, "test", "-t").
 		Required()
 
-	assert.True(t, flag.isRequired())
+	assert.True(t, flag.required)
 }
 
 func TestFlagRequiredDisablesVoid(t *testing.T) {
@@ -104,24 +111,32 @@ func TestFlagRequiredDisablesVoid(t *testing.T) {
 		Void().
 		Required()
 
-	assert.False(t, flag.isVoid())
-	assert.True(t, flag.isRequired())
+	assert.False(t, flag.void)
+	assert.True(t, flag.required)
 }
 
 func TestFlagParse(t *testing.T) {
 	flag := NewFlag(TypeInt, IntParser, "test", "-t")
 
-	assert.Nil(t, flag.parse("42"))
+	value := "42"
+	consumed, err := flag.process(&value)
 
-	assert.True(t, flag.isSet())
+	assert.True(t, consumed)
+	assert.Nil(t, err)
+
+	assert.True(t, flag.set)
 	assert.Equal(t, 42, flag.Value())
 }
 
 func TestFlagParseError(t *testing.T) {
 	flag := NewFlag(TypeInt, IntParser, "test", "-t")
 
-	assert.NotNil(t, flag.parse("invalid"))
-	assert.False(t, flag.isSet())
+	value := "invalid"
+	consumed, err := flag.process(&value)
+
+	assert.False(t, consumed)
+	assert.NotNil(t, err)
+	assert.False(t, flag.set)
 }
 
 func TestFlagInfo(t *testing.T) {
@@ -168,4 +183,59 @@ func TestFlagAliases(t *testing.T) {
 	assert.Size(t, 2, got)
 	assert.Equal(t, "-t", got[0])
 	assert.Equal(t, "--test", got[1])
+}
+
+func TestFlagDuplicateOption(t *testing.T) {
+	flag := NewFlag(TypeInt, IntParser, "test", "-t")
+
+	val1 := "10"
+	consumed, err := flag.process(&val1)
+	assert.True(t, consumed)
+	assert.Nil(t, err)
+
+	val2 := "20"
+	consumed, err = flag.process(&val2)
+	assert.False(t, consumed)
+	assert.ErrorIs(t, ErrDuplicateOption, err)
+}
+
+func TestFlagMissingValue(t *testing.T) {
+	flag := NewFlag(TypeInt, IntParser, "test", "-t")
+
+	consumed, err := flag.process(nil)
+	assert.False(t, consumed)
+	assert.ErrorIs(t, ErrMissingValue, err)
+}
+
+func TestFlagVoidUnexpectedValue(t *testing.T) {
+	flag := VoidFlag("verbose", "-v")
+
+	val := "unexpected"
+	consumed, err := flag.process(&val)
+	assert.False(t, consumed)
+	assert.ErrorIs(t, ErrUnexpectedValue, err)
+}
+
+func TestFlagRequiredMissing(t *testing.T) {
+	flag := NewFlag(TypeInt, IntParser, "test", "-t").Required()
+
+	err := flag.validate()
+	assert.ErrorIs(t, ErrRequiredOption, err)
+
+	val := "1"
+	_, _ = flag.process(&val)
+	assert.Nil(t, flag.validate())
+}
+
+func TestFlagReset(t *testing.T) {
+	flag := NewFlag(TypeInt, IntParser, "test", "-t")
+
+	val := "42"
+	_, _ = flag.process(&val)
+	assert.Equal(t, 42, flag.Value())
+
+	flag.reset()
+	assert.False(t, flag.set)
+	assert.False(t, flag.present)
+	assert.Equal(t, 0, flag.Value())
 }

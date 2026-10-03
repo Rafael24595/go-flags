@@ -43,7 +43,7 @@ func TestCLIParseValue(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.True(t, port.IsPresent())
-	assert.True(t, port.isSet())
+	assert.True(t, port.set)
 	assert.Equal(t, 8080, port.Value())
 }
 
@@ -83,7 +83,7 @@ func TestCLIParseDefaultOptional(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.True(t, verbose.IsPresent())
-	assert.True(t, verbose.isSet())
+	assert.True(t, verbose.set)
 	assert.True(t, verbose.Value())
 }
 
@@ -185,7 +185,7 @@ func TestCLIParseInvalidValue(t *testing.T) {
 	err := cli.ParseWith([]string{"-v", "invalid"})
 
 	assert.ErrorIs(t, ErrInvalidValue, err)
-	assert.False(t, value.isSet())
+	assert.False(t, value.set)
 }
 
 func TestCLIParseUnknownOption(t *testing.T) {

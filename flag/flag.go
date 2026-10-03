@@ -1,20 +1,14 @@
 package flag
 
+import "fmt"
+
 type flag interface {
 	info() Info
 	aliases() []string
-	isSet() bool
-	isPresent() bool
-	isVoid() bool
-	isOptional() bool
-	isRequired() bool
 	reset()
-	markPresent()
-	parse(string) error
-	applyOptionalDefault()
-	applyUndefinedDefault()
+	process(value *string) (bool, error)
+	validate() error
 }
-
 
 // Flag represents a command-line flag and its configuration.
 //
@@ -136,7 +130,7 @@ func (f *Flag[T]) Required() *Flag[T] {
 
 // IsPresent returns true if the flag was provided on the command line.
 func (f *Flag[T]) IsPresent() bool {
-	return f.isPresent()
+	return f.present
 }
 
 // Value returns the parsed value of the flag.
@@ -171,26 +165,6 @@ func (f *Flag[T]) aliases() []string {
 	return f.names
 }
 
-func (f *Flag[T]) isSet() bool {
-	return f.set
-}
-
-func (f *Flag[T]) isPresent() bool {
-	return f.present
-}
-
-func (f *Flag[T]) isVoid() bool {
-	return f.void
-}
-
-func (f *Flag[T]) isOptional() bool {
-	return f.hasOptionalDefault
-}
-
-func (f *Flag[T]) isRequired() bool {
-	return f.required
-}
-
 func (f *Flag[T]) reset() {
 	var zero T
 	f.present = false
@@ -198,32 +172,53 @@ func (f *Flag[T]) reset() {
 	f.set = false
 }
 
-func (f *Flag[T]) markPresent() {
-	f.present = true
-}
-
-func (f *Flag[T]) parse(value string) error {
-	parsed, err := f.parser(value)
-	if err != nil {
-		return err
+func (f *Flag[T]) process(value *string) (bool, error) {
+	if f.present {
+		return false, ErrDuplicateOption
 	}
 
-	f.value = parsed
-	f.set = true
+	f.present = true
+
+	if value == nil {
+		if f.void {
+			return false, nil
+		}
+
+		if f.hasOptionalDefault {
+			f.setValue(f.optionalDefault)
+			return false, nil
+		}
+
+		return false, ErrMissingValue
+	}
+
+	if f.void {
+		return false, ErrUnexpectedValue
+	}
+
+	parsed, err := f.parser(*value)
+	if err != nil {
+		return false, fmt.Errorf("%w: %w", ErrInvalidValue, err)
+	}
+
+	f.setValue(parsed)
+
+	return true, nil
+}
+
+func (f *Flag[T]) validate() error {
+	if f.required && !f.present {
+		return ErrRequiredOption
+	}
+
+	if !f.set && f.hasUndefinedDefault {
+		f.setValue(f.undefinedDefault)
+	}
 
 	return nil
 }
 
-func (f *Flag[T]) applyOptionalDefault() {
-	if f.hasOptionalDefault {
-		f.value = f.optionalDefault
-		f.set = true
-	}
-}
-
-func (f *Flag[T]) applyUndefinedDefault() {
-	if f.hasUndefinedDefault {
-		f.value = f.undefinedDefault
-		f.set = true
-	}
+func (f *Flag[T]) setValue(value T) {
+	f.value = value
+	f.set = true
 }
