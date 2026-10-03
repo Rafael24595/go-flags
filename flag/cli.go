@@ -86,8 +86,53 @@ func (c *CLI) Float64(description string, names ...string) *Flag[float64] {
 	return flag
 }
 
-func (c *CLI) add(f flag) {
-	c.flags = append(c.flags, f)
+// SliceBool registers a boolean slice option.
+func (c *CLI) SliceBool(description string, names ...string) *SliceFlag[bool] {
+	flag := SliceBoolFlag(description, names...)
+	c.Add(flag)
+	return flag
+}
+
+// SliceString registers a string slice option.
+func (c *CLI) SliceString(description string, names ...string) *SliceFlag[string] {
+	flag := SliceStringFlag(description, names...)
+	c.Add(flag)
+	return flag
+}
+
+// SliceInt registers an integer slice option.
+func (c *CLI) SliceInt(description string, names ...string) *SliceFlag[int] {
+	flag := SliceIntFlag(description, names...)
+	c.Add(flag)
+	return flag
+}
+
+// SliceInt64 registers a 64-bit signed integer slice option.
+func (c *CLI) SliceInt64(description string, names ...string) *SliceFlag[int64] {
+	flag := SliceInt64Flag(description, names...)
+	c.Add(flag)
+	return flag
+}
+
+// SliceUint registers an unsigned integer slice option.
+func (c *CLI) SliceUint(description string, names ...string) *SliceFlag[uint] {
+	flag := SliceUintFlag(description, names...)
+	c.Add(flag)
+	return flag
+}
+
+// SliceUint64 registers a 64-bit unsigned integer slice option.
+func (c *CLI) SliceUint64(description string, names ...string) *SliceFlag[uint64] {
+	flag := SliceUint64Flag(description, names...)
+	c.Add(flag)
+	return flag
+}
+
+// SliceFloat64 registers a 64-bit floating-point slice option.
+func (c *CLI) SliceFloat64(description string, names ...string) *SliceFlag[float64] {
+	flag := SliceFloat64Flag(description, names...)
+	c.Add(flag)
+	return flag
 }
 
 // Parse parses the command-line arguments provided to the process.

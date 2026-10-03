@@ -239,3 +239,98 @@ func TestFlagReset(t *testing.T) {
 	assert.False(t, flag.present)
 	assert.Equal(t, 0, flag.Value())
 }
+
+func TestSliceFlagAccumulation(t *testing.T) {
+	flag := NewSliceFlag(TypeString, StringParser, "test", "-t")
+
+	v1 := "foo"
+	consumed, err := flag.process(&v1)
+
+	assert.True(t, consumed)
+	assert.Nil(t, err)
+
+	v2 := "bar"
+	consumed, err = flag.process(&v2)
+	assert.True(t, consumed)
+	assert.Nil(t, err)
+
+	assert.DeepEqual(t, []string{"foo", "bar"}, flag.Value())
+}
+
+func TestSliceFlagMissingValue(t *testing.T) {
+	flag := NewSliceFlag(TypeString, StringParser, "test", "-t")
+
+	consumed, err := flag.process(nil)
+	assert.False(t, consumed)
+	assert.ErrorIs(t, ErrMissingValue, err)
+}
+
+func TestSliceFlagParseErrorDoesNotAppend(t *testing.T) {
+	flag := NewSliceFlag(TypeInt, IntParser, "test", "-t")
+
+	v1 := "10"
+	consumed, err := flag.process(&v1)
+
+	assert.True(t, consumed)
+	assert.Nil(t, err)
+
+	v2 := "invalid"
+	consumed, err = flag.process(&v2)
+
+	assert.False(t, consumed)
+	assert.NotNil(t, err)
+
+	assert.DeepEqual(t, []int{10}, flag.Value())
+}
+
+func TestSliceFlagRequired(t *testing.T) {
+	flag := NewSliceFlag(TypeInt, StringParser, "test", "-t").Required()
+
+	assert.ErrorIs(t, ErrRequiredOption, flag.validate())
+
+	val := "1"
+	_, _ = flag.process(&val)
+	assert.Nil(t, flag.validate())
+}
+
+func TestSliceFlagReset(t *testing.T) {
+	flag := NewSliceFlag(TypeString, StringParser, "test", "-t")
+
+	val := "item"
+	_, _ = flag.process(&val)
+
+	flag.reset()
+	assert.Size(t, 0, flag.Value())
+}
+
+func TestSliceFlagInfo(t *testing.T) {
+	flag := NewSliceFlag(TypeInt, IntParser, "Listening ports", "-p", "--ports")
+
+	info := flag.info()
+
+	assert.DeepEqual(t, []string{"-p", "--ports"}, info.Names)
+	assert.Equal(t, TypeInt.Slice(), info.Type)
+	assert.Equal(t, "Listening ports (separator: ',')", info.Description)
+	assert.False(t, info.Void)
+	assert.False(t, info.Required)
+}
+
+func TestSliceFlagInfoCustomSeparator(t *testing.T) {
+	flag := NewSliceFlag(TypeString, StringParser, "System tags", "-t", "--tags").
+		Separator(';')
+
+	info := flag.info()
+
+	assert.Equal(t, "System tags (separator: ';')", info.Description)
+}
+
+func TestSliceFlagSeparatorSplitsSingleArgument(t *testing.T) {
+	flag := NewSliceFlag(TypeInt, IntParser, "List of ports", "-p")
+
+	val := "8000,8081,9000"
+	consumed, err := flag.process(&val)
+
+	assert.True(t, consumed)
+	assert.Nil(t, err)
+	assert.DeepEqual(t, []int{8000, 8081, 9000}, flag.Value())
+}

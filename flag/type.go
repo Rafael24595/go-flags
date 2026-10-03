@@ -22,3 +22,7 @@ const (
 	// TypeFloat64 identifies a 64-bit floating-point option.
 	TypeFloat64 TypeName = "float64"
 )
+
+func (t TypeName) Slice() TypeName {
+	return TypeName(string(t) + "[]")
+}

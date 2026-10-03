@@ -222,3 +222,93 @@ func (f *Flag[T]) setValue(value T) {
 	f.value = value
 	f.set = true
 }
+
+// SliceFlag represents a command-line flag that accepts multiple values
+// and its configuration.
+//
+// The values are parsed using the provided parser and separated by a
+// specified separator character. The default separator is a comma (',').
+//
+// A SliceFlag can define different default values depending on whether it is
+// omitted entirely or provided without an explicit value.
+type SliceFlag[T any] struct {
+	Flag[[]T]
+	separator  rune
+	baseParser Parser[T]
+}
+
+// NewSliceFlag creates a new command-line flag that accepts multiple values
+// using the given parser.
+//
+// At least one name must be provided. Multiple names can be used to define
+// aliases for the same flag.
+//
+// For example:
+//
+// covers := NewSliceFlag(IntParser, "Cover indices", "-c", "--covers")
+func NewSliceFlag[T any](
+	typeName TypeName,
+	parser Parser[T],
+	desc string,
+	names ...string,
+) *SliceFlag[T] {
+	if len(names) == 0 {
+		panic("flag requires at least one name")
+	}
+
+	separator := DefaultSeparator
+
+	return &SliceFlag[T]{
+		Flag: Flag[[]T]{
+			parser:      SliceParser(parser, separator),
+			typeName:    typeName.Slice(),
+			names:       names,
+			description: desc,
+		},
+		separator:  separator,
+		baseParser: parser,
+	}
+}
+
+// Separator sets the character used to separate multiple values for the flag.
+//
+// For example:
+//
+// covers := NewSliceFlag(IntParser, "Cover indices", "-c", "--covers").
+//     Separator(';')
+//
+// Running the program with -c 1;2;3 results in a value of []int{1, 2, 3}.
+func (f *SliceFlag[T]) Separator(sep rune) *SliceFlag[T] {
+	f.separator = sep
+	f.parser = SliceParser(f.baseParser, sep)
+	return f
+}
+
+func (f *SliceFlag[T]) info() Info {
+	info := f.Flag.info()
+	info.Description = f.description()
+	return info
+}
+
+func (f *SliceFlag[T]) description() string {
+	return fmt.Sprintf("%s (separator: %q)", f.Flag.description, f.separator)
+}
+
+func (f *SliceFlag[T]) process(value *string) (bool, error) {
+	f.present = true
+
+	if value == nil {
+		return false, ErrMissingValue
+	}
+
+	parsed, err := f.parser(*value)
+	if err != nil {
+		return false, err
+	}
+
+	f.setValue(
+		append(f.value, parsed...),
+	)
+
+	return true, nil
+}

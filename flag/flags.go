@@ -58,3 +58,38 @@ func Uint64Flag(description string, names ...string) *Flag[uint64] {
 func Float64Flag(description string, names ...string) *Flag[float64] {
 	return NewFlag(TypeFloat64, Float64Parser, description, names...)
 }
+
+// SliceBoolFlag creates a flag that parses a list of boolean values.
+func SliceBoolFlag(description string, names ...string) *SliceFlag[bool] {
+	return NewSliceFlag(TypeBool, BoolParser, description, names...)
+}
+
+// SliceStringFlag creates a flag that parses a list of string values.
+func SliceStringFlag(description string, names ...string) *SliceFlag[string] {
+	return NewSliceFlag(TypeString, StringParser, description, names...)
+}
+
+// SliceIntFlag creates a flag that parses a list of integer values.
+func SliceIntFlag(description string, names ...string) *SliceFlag[int] {
+	return NewSliceFlag(TypeInt, IntParser, description, names...)
+}
+
+// SliceInt64Flag creates a flag that parses a list of 64-bit integer values.
+func SliceInt64Flag(description string, names ...string) *SliceFlag[int64] {
+	return NewSliceFlag(TypeInt64, Int64Parser, description, names...)
+}
+
+// SliceUintFlag creates a flag that parses a list of unsigned integer values.
+func SliceUintFlag(description string, names ...string) *SliceFlag[uint] {
+	return NewSliceFlag(TypeUint, UintParser, description, names...)
+}
+
+// SliceUint64Flag creates a flag that parses a list of 64-bit unsigned integer values.
+func SliceUint64Flag(description string, names ...string) *SliceFlag[uint64] {
+	return NewSliceFlag(TypeUint64, Uint64Parser, description, names...)
+}
+
+// SliceFloat64Flag creates a flag that parses a list of 64-bit floating-point values.
+func SliceFloat64Flag(description string, names ...string) *SliceFlag[float64] {
+	return NewSliceFlag(TypeFloat64, Float64Parser, description, names...)
+}

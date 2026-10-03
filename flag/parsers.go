@@ -1,6 +1,15 @@
 package flag
 
-import "strconv"
+import (
+	"encoding/csv"
+	"strconv"
+	"strings"
+)
+
+const (
+	// DefaultSeparator is the default character used to separate multiple values
+	DefaultSeparator = ','
+)
 
 // Parser converts a command-line argument from a string into a value of type T.
 type Parser[T any] func(string) (T, error)
@@ -48,4 +57,41 @@ func Uint64Parser(value string) (uint64, error) {
 // Float64Parser parses a base-10 floating-point number.
 func Float64Parser(value string) (float64, error) {
 	return strconv.ParseFloat(value, 64)
+}
+
+func SliceParser[T any](parser Parser[T], separator rune) Parser[[]T] {
+	return func(value string) ([]T, error) {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			return []T{}, nil
+		}
+
+		reader := csv.NewReader(
+			strings.NewReader(value),
+		)
+
+		reader.Comma = separator
+		reader.LazyQuotes = true
+		reader.TrimLeadingSpace = true
+
+		records, err := reader.Read()
+		if err != nil {
+			return nil, err
+		}
+
+		result := make([]T, 0, len(records))
+
+		for _, part := range records {
+			cleaned := strings.TrimSpace(part)
+
+			parsed, err := parser(cleaned)
+			if err != nil {
+				return nil, err
+			}
+
+			result = append(result, parsed)
+		}
+
+		return result, nil
+	}
 }
