@@ -21,8 +21,9 @@ func NewCLI() *CLI {
 }
 
 // Use registers one or more command-line adapters.
-func (c *CLI) Use(adapters ...adapter.Adapter) {
+func (c *CLI) Use(adapters ...adapter.Adapter) *CLI {
 	c.adapters = append(c.adapters, adapters...)
+	return c
 }
 
 // Add registers a command-line flag.
