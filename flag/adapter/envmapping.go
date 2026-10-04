@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"slices"
 	"strings"
 )
 
@@ -55,8 +56,11 @@ func envMappingTransform(
 		}
 
 		result := append([]string{}, args...)
+		
+		keys := envMapKeys(mapping)
+		for _, envVar := range keys {
+			flagName := mapping[envVar]
 
-		for envVar, flagName := range mapping {
 			if provided[flagName] {
 				continue
 			}
@@ -71,6 +75,16 @@ func envMappingTransform(
 
 		return result
 	}
+}
+
+func envMapKeys(mapping map[string]string) []string {
+	keys := make([]string, 0, len(mapping))
+	for envVar := range mapping {
+		keys = append(keys, envVar)
+	}
+
+	slices.Sort(keys)
+	return keys
 }
 
 // LookupEnvWithDot loads environment key-value pairs from a .env file located at path
