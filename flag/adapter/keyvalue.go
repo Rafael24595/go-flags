@@ -3,10 +3,17 @@ package adapter
 import "strings"
 
 const (
-	KeyValueName        = "KeyValue"
+	// KeyValueName is the identifier for the key-value argument adapter.
+	KeyValueName        = "key-value"
+	// KeyValueDescription briefly explains the purpose of the key-value adapter.
 	KeyValueDescription = "Supports 'flag=value' assignment syntax for configured prefixes"
 )
 
+// NewKeyValue creates an Adapter that expands key-value style arguments (e.g., "--flag=value")
+// into distinct flag and value tokens (e.g., "--flag", "value").
+//
+// Optional prefixes restrict which arguments are split. If no prefixes are provided,
+// defaults to matching any argument containing an unquoted '=' sign.
 func NewKeyValue(prefixes ...string) Adapter {
 	if len(prefixes) == 0 {
 		prefixes = []string{""}
