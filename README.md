@@ -20,7 +20,7 @@ It is designed to keep command-line configuration explicit while remaining easy 
   * void options without arguments
 * Built-in support for slice options (e.g., `[]string`, `[]int`, `[]bool`).
 * Configurable list separators for slice arguments (default: `,`).
-* Short and long option names.
+* Extensible pipeline via **Adapters** (e.g., map environment variables or `.env` files directly into CLI flags).
 * Optional values with configurable defaults.
 * Defaults for options that are not provided.
 * Required options.
@@ -52,6 +52,12 @@ Import the package:
 
 ```go
 import "github.com/Rafael24595/go-flags/flag"
+```
+
+Optionally, import the adapter package for `.env` and environment mapping support:
+
+```go
+import "github.com/Rafael24595/go-flags/adapter"
 ```
 
 ## Basic usage
@@ -383,6 +389,64 @@ results in:
 cover.Value() // 0
 ```
 
+## Adapters & Environment Variables (.env)
+
+The `adapter` subpackage provides tools to transform argument slices before they hit the CLI parser. This allows you to automatically inject flags from environment variables or `.env` files without breaking explicit command-line precedence.
+
+### Key-Value Assignment Syntax (`flag=value`)
+
+By default, the CLI parser expects flags and values as separate tokens (e.g., `--port 8080`). Use `adapter.NewKeyValue` to support key-value syntax (`--port=8080` or `-p=8080`).
+
+```go
+// Support 'flag=value' syntax for flags starting with "--" or "-"
+kvAdapter := adapter.NewKeyValue("--", "-")
+
+cli := flag.NewCLI()
+cli.Use(kvAdapter)
+```
+
+You can pass optional prefix filters to `NewKeyValue(...)`. If no prefixes are supplied, it applies to all arguments containing an unquoted `=` sign.
+
+It properly handles quotes so that equal signs inside quoted values are preserved (e.g., `--filter="name=john"` expands cleanly to `--filter` and `"name=john"`).
+
+### Environment Variable Mapping
+
+Use `adapter.NewEnvMapping` (or `adapter.NewEnvMappingWith`) to map system environment variables to CLI flags. 
+
+Command-line flags **always take precedence** over environment variables:
+
+```go
+lookup, err := adapter.LookupEnvWithDot(".env")
+if err != nil && !errors.Is(err, adapter.ErrCannotReadDotEnvFile) {
+    log.Fatal(err)
+}
+
+envAdapter := adapter.NewEnvMappingWith(map[string]string{
+    "APP_PORT":    "--port",
+    "DATABASE_URL": "--db-url",
+}, lookup)
+
+cli := flag.NewCLI()
+cli.Use(envAdapter)
+
+port := cli.Uint("Server port", "-p", "--port").DefaultUndefined(8080)
+db := cli.String("Database URL", "--db-url")
+
+if err := cli.Parse(); err != nil {
+    log.Fatal(err)
+}
+```
+
+If `APP_PORT=9000` is set in the environment or `.env` file, running `./app` will set `port.Value()` to `9000`. Running `./app --port 3000` will prioritize the CLI argument and evaluate to `3000`.
+
+### .env File Loading
+
+`adapter.LookupEnvWithDot(path)` reads a `.env` file from the current working directory and creates a fallback `LookupEnv` function that reads OS environment variables first, falling back to `.env` key-value pairs if absent.
+
+It handles comments (`#`), line trimming, empty values, and quoted strings (`"value"` or `'value'`).
+
+If the `.env` file does not exist, `LookupEnvWithDot` returns a wrapped `adapter.ErrCannotReadDotEnvFile` error while still returning a valid fallback lookup function that reads from the OS environment.
+
 ## Custom parsers
 
 The generic `NewFlag` and `NewSliceFlag` functions allow flags to use custom parsers.
@@ -482,6 +546,8 @@ flag.ErrUnexpectedValue
 flag.ErrMissingValue
 flag.ErrRequiredOption
 flag.ErrInvalidValue
+
+adapter.ErrCannotReadDotEnvFile
 ```
 
 Use `errors.Is` to inspect an error:
@@ -736,16 +802,14 @@ A value is considered an argument when the following token is not the name of an
 ./app --cover -1
 ```
 
-Positional arguments and more advanced syntaxes such as:
+Key-value assignment syntax like `--name=value` is fully supported by registering the `adapter.NewKeyValue` adapter:
 
-```text
---name=value
--nvalue
--nv
---
+```go
+cli := flag.NewCLI()
+cli.Use(adapter.NewKeyValue("--", "-"))
 ```
 
-are not part of the current parser syntax for now.
+Positional arguments, clustered short flags (`-nv`), and `--` delimiters remain outside the default parser core.
 
 ## Example application
 
@@ -755,59 +819,71 @@ A complete small example:
 package main
 
 import (
-	"errors"
-	"fmt"
-	"log"
+    "errors"
+    "fmt"
+    "log"
 
-	"github.com/Rafael24595/go-flags/flag"
+    "github.com/Rafael24595/go-flags/adapter"
+    "github.com/Rafael24595/go-flags/flag"
 )
 
 func main() {
-	cli := flag.NewCLI()
+    lookup, err := adapter.LookupEnvWithDot(".env")
+    if err != nil && !errors.Is(err, adapter.ErrCannotReadDotEnvFile) {
+        log.Fatal(err)
+    }
 
-	input := cli.String(
-		"Path to the input file",
-		"-i", "--input",
-	).Required()
+    envAdapter := adapter.NewEnvMappingWith(map[string]string{
+        "APP_INPUT":   "--input",
+        "APP_WORKERS": "--workers",
+    }, lookup)
 
-	output := cli.String(
-		"Destination directory",
-		"-o", "--output",
-	).DefaultUndefined("download")
+    cli := flag.NewCLI()
+	cli.Use(envAdapter)
 
-	workers := cli.Uint(
-		"Number of parallel workers",
-		"-w", "--workers",
-	).DefaultUndefined(4)
+    input := cli.String(
+        "Path to the input file",
+        "-i", "--input",
+    ).Required()
 
-	cover := cli.Int(
-		"Cover index",
-		"-c", "--cover",
-	).
-		DefaultUndefined(-1).
-		DefaultOptional(0)
+    output := cli.String(
+        "Destination directory",
+        "-o", "--output",
+    ).DefaultUndefined("download")
 
-	verbose := cli.Void(
-		"Enable verbose output",
-		"-v", "--verbose",
-	)
+    workers := cli.Uint(
+        "Number of parallel workers",
+        "-w", "--workers",
+    ).DefaultUndefined(4)
 
-	if err := cli.Parse(); err != nil {
-		switch {
-		case errors.Is(err, flag.ErrRequiredOption):
-			log.Fatal("required option was not provided")
-		case errors.Is(err, flag.ErrUnknownOption):
-			log.Fatal("unknown option")
-		default:
-			log.Fatal(err)
-		}
-	}
+    cover := cli.Int(
+        "Cover index",
+        "-c", "--cover",
+    ).
+        DefaultUndefined(-1).
+        DefaultOptional(0)
 
-	fmt.Println("input:", input.Value())
-	fmt.Println("output:", output.Value())
-	fmt.Println("workers:", workers.Value())
-	fmt.Println("cover:", cover.Value())
-	fmt.Println("verbose:", verbose.IsPresent())
+    verbose := cli.Void(
+        "Enable verbose output",
+        "-v", "--verbose",
+    )
+
+    if err := cli.Parse(); err != nil {
+        switch {
+        case errors.Is(err, flag.ErrRequiredOption):
+            log.Fatal("required option was not provided")
+        case errors.Is(err, flag.ErrUnknownOption):
+            log.Fatal("unknown option")
+        default:
+            log.Fatal(err)
+        }
+    }
+
+    fmt.Println("input:", input.Value())
+    fmt.Println("output:", output.Value())
+    fmt.Println("workers:", workers.Value())
+    fmt.Println("cover:", cover.Value())
+    fmt.Println("verbose:", verbose.IsPresent())
 }
 ```
 
